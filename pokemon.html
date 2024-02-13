@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokémon Abilities</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.24.0/dist/axios.min.js"></script>
+  </head>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    body {
+      background-color: rgb(160, 160, 255);
+    }
+    #list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .mainDiv {
+      display: inline-block;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid black;
+      padding: 10px;
+      margin: 10px;
+      width: 20%;
+      overflow: hidden;
+      height: 500px;
+      background-color: bisque;
+    }
+    .abilities {
+      display: inline-block;
+      margin-top: 5px;
+    }
+    img {
+      width: 100px;
+      height: 100px;
+    }
+    input {
+      margin-top: 20px;
+      margin-left: 80px;
+      margin-right: 10px;
+      height: 30px;
+      text-align: center;
+      border-radius: 5px;
+      border: 2px solid black;
+    }
+    .abilities span {
+      display: flex;
+      justify-content: space-evenly;
+      align-items: flex-start;
+      flex-direction: row;
+      font-size: 15px;
+    }
+    input::placeholder {
+      text-align: center;
+      color: black;
+      font-size: 15px;
+    }
+    ul {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .nolist {
+      font-size: 20px;
+      text-align: center;
+      display: none;
+    }
+    button {
+      width: 70px;
+      height: 30px;
+      border-radius: 5px;
+      border: 2px solid black;
+    }
+    @media screen and (max-width: 480px) {
+      #list {
+        flex-direction: column;
+      }
+      .mainDiv {
+        width: 80%;
+      }
+    }
+    @media screen and (max-width: 768px) {
+      .mainDiv {
+        width: 80%;
+      }
+    }
+  </style>
+  <body>
+    <input type="text" placeholder="Search" id="searchInput" />
+    <button onclick="searchPokemon()">Find</button>
+    <ul id="list"></ul>
+    <div class="nolist">
+      <h1></h1>
+    </div>
+
+    <script>
+      const list = document.querySelector("#list");
+
+      function fetchPokemonData() {
+        axios
+          .get("https://pokeapi.co/api/v2/pokemon?limit=20&offset=0")
+          .then((response) => {
+            const pokemonArray = response.data.results;
+            // console.log(response.data.results)
+
+            for (let x = 0; x < pokemonArray.length; x++) {
+              const pokemonDiv = document.createElement("div");
+              pokemonDiv.setAttribute("class", "mainDiv");
+              list.appendChild(pokemonDiv);
+
+              // Fetching the images of the pokemon
+              axios
+                .get(pokemonArray[x].url)
+                .then((response2) => {
+                  const pokemonName = document.createElement("h2");
+                  const pokemonImage = document.createElement("img");
+                  const abilitiesList = document.createElement("ul");
+                  pokemonName.innerHTML = response2.data.name;
+                  pokemonImage.src = response2.data.sprites.front_default;
+                  // const pokemonNames = pokemonName.toUpperCase();
+                  pokemonDiv.appendChild(pokemonName);
+                  pokemonDiv.appendChild(pokemonImage);
+                  pokemonDiv.appendChild(abilitiesList);
+
+                  // Fetching the abilities of each Pokémon
+                  for (let j = 0; j < response2.data.abilities.length; j++) {
+                    const liDiv = document.createElement("li");
+                    liDiv.innerHTML = `${response2.data.abilities[
+                      j
+                    ].ability.name.toUpperCase()}: `;
+                    liDiv.setAttribute("class", "abilities");
+                    abilitiesList.appendChild(liDiv);
+
+                    // Fetching the effects of abilities of each Pokémon
+                    abilitiesEffect(
+                      liDiv,
+                      response2.data.abilities[j].ability.url
+                    );
+                  }
+
+                  function abilitiesEffect(liDiv, url) {
+                    axios
+                      .get(url)
+                      .then((response3) => {
+                        // Extract and display the key value of the abilities' descriptions
+                        for (
+                          let k = 0;
+                          k < response3.data.effect_entries.length;
+                          k++
+                        ) {
+                          const effectSpan = document.createElement("span");
+                          effectSpan.innerHTML =
+                            response3.data.effect_entries[k].effect;
+                          liDiv.appendChild(effectSpan);
+                          // console.log(response3.data.effect_entries[k].effect)
+                        }
+                      })
+                      .catch((error) => {
+                        console.log("Error:", error);
+                      });
+                  }
+
+                  //2nd .then
+                })
+                .catch((error) => {
+                  console.log("Error:", error);
+                });
+            }
+
+            //1st .then
+          })
+          .catch((error) => {
+            console.log("Error:", error);
+          });
+      }
+
+      // Initial fetch when the page loads
+      fetchPokemonData();
+      const nolist = document.querySelector(".nolist");
+
+      // Function to search for Pokémon
+      function searchPokemon() {
+        const searchInput = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const pokemonDivs = document.querySelectorAll(".mainDiv");
+
+        let noPokemonFound = true;
+
+        pokemonDivs.forEach((pokemonDiv) => {
+          const pokemonName = pokemonDiv
+            .querySelector("h2")
+            .innerHTML.toLowerCase();
+
+          if (pokemonName.includes(searchInput)) {
+            pokemonDiv.style.display = "block";
+            noPokemonFound = false;
+          } else {
+            pokemonDiv.style.display = "none";
+          }
+        });
+
+        nolist.style.display = noPokemonFound ? "block" : "none";
+        nolist.innerHTML = noPokemonFound
+          ? `No match "${searchInput}" Pokemon `
+          : "";
+      }
+    </script>
+  </body>
+</html>
